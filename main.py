@@ -6,104 +6,72 @@ import neopixel
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keycode import Keycode
 
-# ======================
-# HID Setup
-# ======================
+# ------------------
+# Setup
+# ------------------
 kbd = Keyboard(usb_hid.devices)
+pixels = neopixel.NeoPixel(board.D2, 2, brightness=0.4, auto_write=True)
 
-# ======================
-# Buttons
-# ======================
 button_map = [
-    (board.D26, Keycode.D),  # Key 1
-    (board.D27, Keycode.W),  # Key 2
-    (board.D28, Keycode.A),  # Key 3
-    (board.D29, Keycode.S),  # Key 4
+    (board.D26, Keycode.W),
+    (board.D27, Keycode.A),
+    (board.D28, Keycode.S),
+    (board.D29, Keycode.D),
 ]
 
 buttons = []
-for pin, keycode in button_map:
+for pin, key in button_map:
     btn = digitalio.DigitalInOut(pin)
-    btn.direction = digitalio.Direction.INPUT
-    btn.pull = digitalio.Pull.UP
-    buttons.append({"pin": btn, "key": keycode, "state": False})
+    btn.switch_to_input(pull=digitalio.Pull.UP)
+    buttons.append({"obj": btn, "key": key, "pressed": False})
 
-# ======================
-# RGB LEDs
-# ======================
-LED_PIN = board.D2
-NUM_LEDS = 2
-pixels = neopixel.NeoPixel(LED_PIN, NUM_LEDS, brightness=0.4, auto_write=True)
+# ------------------
+# Rainbow Function
+# ------------------
+def rainbow_cycle(step):
+    # step = 0–255
+    r = (step & 255)
+    g = (step * 2 & 255)
+    b = (step * 3 & 255)
+    pixels.fill((r, g, b))  # BOTH LEDs same color
 
-# Key colors
-COLOR_W = (0, 0, 255)
-COLOR_A = (0, 255, 0)
-COLOR_S = (255, 0, 255)
-COLOR_D = (255, 0, 0)
+rainbow_step = 0
+rainbow_active = True
 
-# Track keypress to pause rainbow
-key_active = False
-
-
-# ======================
-# Rainbow Animation
-# ======================
-def wheel(pos):
-    if pos < 0 or pos > 255:
-        return (0, 0, 0)
-    if pos < 85:
-        return (255 - pos * 3, pos * 3, 0)
-    if pos < 170:
-        pos -= 85
-        return (0, 255 - pos * 3, pos * 3)
-    pos -= 170
-    return (pos * 3, 0, 255 - pos * 3)
-
-
-def rainbow_step(offset):
-    for i in range(NUM_LEDS):
-        pixel_index = (i * 256 // NUM_LEDS) + offset
-        pixels[i] = wheel(pixel_index & 255)
-
-
-offset = 0
-
-
-# ======================
+# ------------------
 # Main Loop
-# ======================
+# ------------------
 while True:
     any_pressed = False
 
-    for i, info in enumerate(buttons):
-        pin = info["pin"]
-        keycode = info["key"]
-
-        if not pin.value:  # pressed (LOW)
+    for b in buttons:
+        if not b["obj"].value:   # pressed
             any_pressed = True
+            if not b["pressed"]:
+                kbd.press(b["key"])
+                b["pressed"] = True
 
-            if not info["state"]:
-                kbd.press(keycode)
-                info["state"] = True
+            # Same color for both LEDs
+            if b["key"] == Keycode.W:
+                pixels.fill((0, 0, 255))
+            elif b["key"] == Keycode.A:
+                pixels.fill((255, 0, 0))
+            elif b["key"] == Keycode.S:
+                pixels.fill((0, 255, 0))
+            elif b["key"] == Keycode.D:
+                pixels.fill((255, 255, 0))
 
-                # Set press color
-                if keycode == Keycode.W:
-                    pixels.fill(COLOR_W)
-                elif keycode == Keycode.A:
-                    pixels.fill(COLOR_A)
-                elif keycode == Keycode.S:
-                    pixels.fill(COLOR_S)
-                elif keycode == Keycode.D:
-                    pixels.fill(COLOR_D)
-        else:
-            # key released
-            if info["state"]:
-                kbd.release(keycode)
-                info["state"] = False
+        else:  # released
+            if b["pressed"]:
+                kbd.release(b["key"])
+            b["pressed"] = False
 
-    # Rainbow resumes ONLY if no key is held
+    # If no keys pressed → resume rainbow
     if not any_pressed:
-        offset = (offset + 3) % 256
-        rainbow_step(offset)
-
-    time.sleep(0.01)
+        rainbow_active = True
+        rainbow_cycle(rainbow_step)
+        rainbow_step = (rainbow_step + 1) % 256
+        time.sleep(0.02)
+    else:
+        rainbow_active = False
+        time.sleep(0.01)
