@@ -22,12 +22,12 @@ This is a little macropad I made, It consists of a Xiao RP2040, Four  Cherry MX 
 
 ### **Render**
 
-![Render](render.png)
+![Render](images/render.png)
 
 ### **Schematic**
 
-![Schematic](schematic.png)
+![Schematic](images/schematic.png)
 
 ### **PCB**
 
-![PCB](pcb.png)
+![PCB](images/pcb.png)
