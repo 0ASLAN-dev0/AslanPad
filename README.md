@@ -1,4 +1,4 @@
-# **Aslan's GamepPad**
+# **AslanPad**
 ## **Introduction**
 
 This is a little macropad I made, It consists of a Xiao RP2040, 8  Cherry MX Switches and 8 RGB LEDs, Its basically a little rgb keyboard that consits of eight keys that i've coded to be 1-8 thou that can be changed from the code, The 8 Backlight RGB LEDs circle through the color wheel in a smooth animation and to give a sense of feedback each key is assigned a color that shows up when that key is pressed. Thats it :).
